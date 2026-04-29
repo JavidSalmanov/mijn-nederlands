@@ -11,6 +11,10 @@
     selectedWord: null,
     wordHelpTab: "definition",
     exerciseTab: "fillBlank",
+    gameSelectedWord: null,
+    gamePairs: [],
+    gameMeaningOrder: [],
+    gameLastRoundSignature: "",
     savedWords: JSON.parse(window.localStorage.getItem("dutchDailyCoach.savedWords") || "[]"),
     masteredWords: JSON.parse(window.localStorage.getItem("dutchDailyCoach.masteredWords") || "[]"),
     masteredOpen: false
@@ -113,10 +117,16 @@
     const labels = {
       social: { en: "Meeting friends", nl: "Vrienden ontmoeten" },
       health: { en: "Doctor and health", nl: "Dokter en gezondheid" },
-      work: { en: "Work meeting", nl: "Werkoverleg" }
+      work: { en: "Work meeting", nl: "Werkoverleg" },
+      shopping: { en: "Shopping and supermarket", nl: "Winkelen en supermarkt" },
+      travel: { en: "Travel and transport", nl: "Reizen en vervoer" },
+      housing: { en: "Housing and home", nl: "Wonen en thuis" },
+      official: { en: "Official matters", nl: "Officiele zaken" },
+      study: { en: "Study and class", nl: "Studie en les" },
+      food: { en: "Food and going out", nl: "Eten en uitgaan" }
     };
 
-    return labels[theme][state.uiLanguage];
+    return labels[theme]?.[state.uiLanguage] || theme;
   }
 
   function escapeRegExp(value) {
@@ -223,6 +233,9 @@
     resetWordPanel();
     renderWordOfDay();
     renderExercises();
+    initializeGame();
+    els.gameFeedback.textContent = "";
+    renderGame();
   }
 
   function renderLessonModeTabs() {
@@ -370,27 +383,77 @@
   }
 
   function getGamePairs() {
-    const lessonWords = Object.entries(state.selectedLesson?.focusWords || {});
-    return lessonWords
-      .filter(([, value]) => value.translation)
-      .map(([word, value]) => ({ word, translation: value.translation }));
+    const uniquePairs = new Map();
+
+    Object.entries(data.lexicon || {}).forEach(([word, value]) => {
+      if (value.translation && !uniquePairs.has(word)) {
+        uniquePairs.set(word, { word, translation: value.translation });
+      }
+    });
+
+    data.lessons.forEach((lesson) => {
+      Object.entries(lesson.focusWords || {}).forEach(([word, value]) => {
+        if (value.translation && !uniquePairs.has(word)) {
+          uniquePairs.set(word, { word, translation: value.translation });
+        }
+      });
+
+      lesson.sentences.forEach((sentence) => {
+        sentence.match(/[A-Za-zÀ-ÿ']+/g)?.forEach((token) => {
+          const normalized = normalizeWord(token);
+          const lexiconEntry = data.lexicon[normalized];
+          if (lexiconEntry?.translation && !uniquePairs.has(normalized)) {
+            uniquePairs.set(normalized, {
+              word: normalized,
+              translation: lexiconEntry.translation
+            });
+          }
+        });
+      });
+    });
+
+    return [...uniquePairs.values()];
+  }
+
+  function initializeGame() {
+    state.gameSelectedWord = null;
+    const allPairs = getGamePairs();
+    const desiredSize = Math.min(6, allPairs.length);
+    let selectedPairs = shuffle(allPairs).slice(0, desiredSize);
+    let signature = selectedPairs.map((pair) => pair.word).sort().join("|");
+    let attempts = 0;
+
+    while (
+      allPairs.length > desiredSize &&
+      signature === state.gameLastRoundSignature &&
+      attempts < 6
+    ) {
+      selectedPairs = shuffle(allPairs).slice(0, desiredSize);
+      signature = selectedPairs.map((pair) => pair.word).sort().join("|");
+      attempts += 1;
+    }
+
+    state.gamePairs = selectedPairs;
+    state.gameMeaningOrder = shuffle(state.gamePairs.map((pair) => pair.word));
+    state.gameLastRoundSignature = signature;
   }
 
   function renderGame() {
     const copy = getCopy();
-    const pairs = getGamePairs();
-    const selectedWord = state.gameSelectedWord || null;
+    const pairs = state.gamePairs;
+    const selectedWord = state.gameSelectedWord;
     const score = Number(window.localStorage.getItem("dutchDailyCoach.gameScore") || 0);
     els.gameScorePill.textContent = `${copy.gameScore}: ${score}`;
 
     if (!pairs.length) {
       els.gameWordList.innerHTML = "";
       els.gameMeaningList.innerHTML = "";
-      els.gameFeedback.textContent = "";
+      els.gameFeedback.textContent =
+        state.uiLanguage === "nl"
+          ? "Ronde klaar. Klik op nieuw spel voor nieuwe woorden."
+          : "Round complete. Click new game for new words.";
       return;
     }
-
-    const shuffledMeanings = shuffle(pairs);
 
     els.gameWordList.innerHTML = pairs
       .map(
@@ -399,7 +462,9 @@
       )
       .join("");
 
-    els.gameMeaningList.innerHTML = shuffledMeanings
+    els.gameMeaningList.innerHTML = state.gameMeaningOrder
+      .map((word) => pairs.find((pair) => pair.word === word))
+      .filter(Boolean)
       .map(
         (pair) =>
           `<button type="button" class="choice-button game-option" data-game-translation="${pair.translation}" data-game-word="${pair.word}">${pair.translation}</button>`
@@ -408,10 +473,9 @@
   }
 
   function resetGame() {
-    state.gameSelectedWord = null;
-    state.gameFeedback = "";
-    renderGame();
+    initializeGame();
     els.gameFeedback.textContent = "";
+    renderGame();
   }
 
   function applyTheme() {
@@ -479,7 +543,12 @@
   }
 
   function openNextLesson() {
-    state.lessonIndex = (state.lessonIndex + 1) % data.lessons.length;
+    const filteredLessons =
+      state.lessonModeFilter === "all"
+        ? data.lessons
+        : data.lessons.filter((lesson) => lesson.mode === state.lessonModeFilter);
+
+    state.lessonIndex = (state.lessonIndex + 1) % filteredLessons.length;
     window.localStorage.setItem("dutchDailyCoach.lessonIndex", String(state.lessonIndex));
     renderLesson();
   }
@@ -571,6 +640,8 @@
         const currentScore = Number(window.localStorage.getItem("dutchDailyCoach.gameScore") || 0) + 1;
         window.localStorage.setItem("dutchDailyCoach.gameScore", String(currentScore));
         els.gameFeedback.textContent = copy.gameCorrect;
+        state.gamePairs = state.gamePairs.filter((pair) => pair.word !== state.gameSelectedWord);
+        state.gameMeaningOrder = state.gameMeaningOrder.filter((word) => word !== state.gameSelectedWord);
       } else {
         els.gameFeedback.textContent = copy.gameWrong;
       }
