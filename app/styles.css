@@ -13,8 +13,8 @@
   --radius-xl: 28px;
   --radius-lg: 18px;
   --radius-md: 12px;
-  --font-ui: "Avenir Next", "Trebuchet MS", sans-serif;
-  --font-display: "Iowan Old Style", "Palatino Linotype", serif;
+  --font-ui: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
 }
 
 body[data-theme="dark"] {
@@ -40,6 +40,8 @@ body {
   min-height: 100vh;
   color: var(--text);
   font-family: var(--font-ui);
+  font-size: 17px;
+  line-height: 1.6;
   background:
     radial-gradient(circle at top left, rgba(242, 181, 68, 0.16), transparent 30%),
     radial-gradient(circle at top right, rgba(13, 124, 102, 0.14), transparent 24%),
@@ -90,12 +92,12 @@ h3 {
 }
 
 h2 {
-  font-size: clamp(1.6rem, 2vw, 2.15rem);
-  line-height: 1.05;
+  font-size: clamp(1.5rem, 2vw, 2rem);
+  line-height: 1.2;
 }
 
 h3 {
-  font-size: 1.12rem;
+  font-size: 1.06rem;
   margin-bottom: 10px;
 }
 
@@ -104,7 +106,7 @@ h3 {
 .exercise-block p,
 #reviewIntro {
   color: var(--muted);
-  line-height: 1.55;
+  line-height: 1.7;
 }
 
 select,
@@ -204,7 +206,7 @@ select,
 }
 
 .sentence-item {
-  line-height: 1.7;
+  line-height: 1.85;
 }
 
 .dialogue-line,
@@ -227,15 +229,16 @@ select,
 
 .story-paragraph {
   margin: 0;
-  line-height: 1.8;
+  line-height: 1.95;
   color: var(--text);
 }
 
 .tap-word {
   border: 0;
-  background: linear-gradient(180deg, transparent 60%, rgba(242, 181, 68, 0.55) 60%);
+  background: rgba(13, 124, 102, 0.08);
   color: inherit;
-  padding: 0 2px;
+  padding: 1px 4px;
+  border-radius: 6px;
   cursor: pointer;
 }
 
@@ -243,6 +246,7 @@ select,
 .tap-word:focus-visible {
   outline: none;
   color: var(--accent);
+  background: rgba(13, 124, 102, 0.16);
 }
 
 .word-details {
@@ -279,17 +283,18 @@ select,
 }
 
 .word-term {
-  font-size: 1.2rem;
+  font-size: 1.28rem;
   color: var(--text);
   font-weight: 700;
 }
 
 .word-definition {
-  font-size: 1rem;
+  font-size: 1.02rem;
 }
 
 .word-example {
   font-style: italic;
+  line-height: 1.7;
 }
 
 .word-day-sentence {
@@ -397,6 +402,7 @@ select,
   min-height: 24px;
   margin-top: 10px;
   font-weight: 600;
+  line-height: 1.5;
 }
 
 .game-board {
@@ -505,7 +511,7 @@ select,
   }
 
   h2 {
-    font-size: 1.35rem;
+    font-size: 1.28rem;
   }
 
   .lesson-intro,
@@ -513,7 +519,7 @@ select,
   .word-day-sentence,
   .dialogue-line,
   .story-line {
-    font-size: 0.98rem;
+    font-size: 1rem;
   }
 
   .dialogue-line {
