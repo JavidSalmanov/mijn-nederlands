@@ -135,8 +135,13 @@ select,
   grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
 }
 
+.page-section-game {
+  grid-template-columns: 1fr;
+}
+
 .lesson-card,
-.exercises-card {
+.exercises-card,
+.game-card {
   grid-column: 1 / 2;
 }
 
@@ -394,6 +399,29 @@ select,
   font-weight: 600;
 }
 
+.game-board {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.game-column {
+  display: grid;
+  gap: 12px;
+}
+
+.game-list {
+  display: grid;
+  gap: 10px;
+}
+
+.game-option.active {
+  border-color: rgba(13, 124, 102, 0.7);
+  background: rgba(13, 124, 102, 0.13);
+  color: var(--accent);
+}
+
 .saved-words {
   display: flex;
   flex-wrap: wrap;
@@ -421,7 +449,8 @@ select,
 
 @media (max-width: 920px) {
   .page-section-main,
-  .page-section-exercises {
+  .page-section-exercises,
+  .page-section-game {
     grid-template-columns: 1fr;
   }
 
@@ -508,6 +537,10 @@ select,
 
   .choice-row,
   .choice-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .game-board {
     grid-template-columns: 1fr;
   }
 

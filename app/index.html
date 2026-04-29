@@ -12,6 +12,7 @@
         <div class="hero-controls">
           <button class="secondary-button toolbar-button" id="mainPageBtn">Hoofd</button>
           <button class="secondary-button toolbar-button" id="exercisePageBtn">Oefeningen</button>
+          <button class="secondary-button toolbar-button" id="gamePageBtn">Spel</button>
           <button class="secondary-button toolbar-button" id="languageToggleBtn">NL</button>
           <button class="theme-toggle" id="themeToggleBtn" aria-label="Thema wisselen" title="Thema wisselen">
             <span class="theme-toggle-track">
@@ -136,6 +137,36 @@
             <div class="mastered-panel hidden" id="masteredPanel">
               <h3 id="masteredTitle">Mastered words</h3>
               <div class="saved-words" id="masteredWords"></div>
+            </div>
+          </section>
+        </section>
+
+        <section class="page-section page-section-game hidden" id="gamePage">
+          <section class="card game-card">
+            <div class="card-head">
+              <div>
+                <p class="section-kicker" id="gameLabel">Spel</p>
+                <h2 id="gameTitle">Snel koppelen</h2>
+              </div>
+              <div class="lesson-meta">
+                <span class="pill" id="gameScorePill">Score: 0</span>
+              </div>
+            </div>
+
+            <p class="lesson-intro" id="gameIntro"></p>
+            <div class="game-board">
+              <div class="game-column">
+                <h3 id="gameWordsTitle">Woorden</h3>
+                <div class="game-list" id="gameWordList"></div>
+              </div>
+              <div class="game-column">
+                <h3 id="gameMeaningsTitle">Vertalingen</h3>
+                <div class="game-list" id="gameMeaningList"></div>
+              </div>
+            </div>
+            <p class="feedback" id="gameFeedback"></p>
+            <div class="button-row">
+              <button class="primary-button" id="newGameBtn">Nieuw spel</button>
             </div>
           </section>
         </section>

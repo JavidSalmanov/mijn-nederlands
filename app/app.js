@@ -22,8 +22,10 @@
     themeToggleThumb: document.getElementById("themeToggleThumb"),
     mainPageBtn: document.getElementById("mainPageBtn"),
     exercisePageBtn: document.getElementById("exercisePageBtn"),
+    gamePageBtn: document.getElementById("gamePageBtn"),
     mainPage: document.getElementById("mainPage"),
     exercisePage: document.getElementById("exercisePage"),
+    gamePage: document.getElementById("gamePage"),
     openLessonBtn: document.getElementById("openLessonBtn"),
     dialogueModeBtn: document.getElementById("dialogueModeBtn"),
     storyModeBtn: document.getElementById("storyModeBtn"),
@@ -76,7 +78,17 @@
     toggleMasteredBtn: document.getElementById("toggleMasteredBtn"),
     masteredPanel: document.getElementById("masteredPanel"),
     masteredTitle: document.getElementById("masteredTitle"),
-    masteredWords: document.getElementById("masteredWords")
+    masteredWords: document.getElementById("masteredWords"),
+    gameLabel: document.getElementById("gameLabel"),
+    gameTitle: document.getElementById("gameTitle"),
+    gameIntro: document.getElementById("gameIntro"),
+    gameWordsTitle: document.getElementById("gameWordsTitle"),
+    gameMeaningsTitle: document.getElementById("gameMeaningsTitle"),
+    gameScorePill: document.getElementById("gameScorePill"),
+    gameWordList: document.getElementById("gameWordList"),
+    gameMeaningList: document.getElementById("gameMeaningList"),
+    gameFeedback: document.getElementById("gameFeedback"),
+    newGameBtn: document.getElementById("newGameBtn")
   };
 
   function getCopy() {
@@ -137,6 +149,10 @@
       "wordPanelLabel",
       "practiceLabel",
       "practiceTitle",
+      "gameLabel",
+      "gameTitle",
+      "gameWordsTitle",
+      "gameMeaningsTitle",
       "fillBlankTitle",
       "matchTitle",
       "contextTitle",
@@ -147,6 +163,7 @@
 
     els.mainPageBtn.textContent = copy.mainPage;
     els.exercisePageBtn.textContent = copy.exercisesPage;
+    els.gamePageBtn.textContent = copy.gamePage;
     els.dialogueModeBtn.textContent = copy.dialogueMode;
     els.storyModeBtn.textContent = copy.storyMode;
     els.languageToggleBtn.textContent = state.uiLanguage === "nl" ? "NL" : "EN";
@@ -166,11 +183,14 @@
     els.themeToggleThumb.textContent = state.theme === "dark" ? "☾" : "☀︎";
     els.themeToggleBtn.classList.toggle("dark", state.theme === "dark");
     els.openLessonBtn.textContent = copy.openLesson;
+    els.gameIntro.textContent = copy.gameIntro;
+    els.newGameBtn.textContent = copy.newGame;
     els.reviewIntro.textContent = copy.reviewIntro;
     els.toggleMasteredBtn.textContent = copy.masteredButton;
     els.masteredTitle.textContent = copy.masteredTitle;
     renderPageTabs();
     renderLessonModeTabs();
+    renderGame();
   }
 
   function renderLesson() {
@@ -330,10 +350,68 @@
 
   function renderPageTabs() {
     const isMain = state.currentPage === "main";
+    const isExercises = state.currentPage === "exercises";
+    const isGame = state.currentPage === "game";
     els.mainPage.classList.toggle("hidden", !isMain);
-    els.exercisePage.classList.toggle("hidden", isMain);
+    els.exercisePage.classList.toggle("hidden", !isExercises);
+    els.gamePage.classList.toggle("hidden", !isGame);
     els.mainPageBtn.classList.toggle("active", isMain);
-    els.exercisePageBtn.classList.toggle("active", !isMain);
+    els.exercisePageBtn.classList.toggle("active", isExercises);
+    els.gamePageBtn.classList.toggle("active", isGame);
+  }
+
+  function shuffle(items) {
+    const copy = [...items];
+    for (let i = copy.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  function getGamePairs() {
+    const lessonWords = Object.entries(state.selectedLesson?.focusWords || {});
+    return lessonWords
+      .filter(([, value]) => value.translation)
+      .map(([word, value]) => ({ word, translation: value.translation }));
+  }
+
+  function renderGame() {
+    const copy = getCopy();
+    const pairs = getGamePairs();
+    const selectedWord = state.gameSelectedWord || null;
+    const score = Number(window.localStorage.getItem("dutchDailyCoach.gameScore") || 0);
+    els.gameScorePill.textContent = `${copy.gameScore}: ${score}`;
+
+    if (!pairs.length) {
+      els.gameWordList.innerHTML = "";
+      els.gameMeaningList.innerHTML = "";
+      els.gameFeedback.textContent = "";
+      return;
+    }
+
+    const shuffledMeanings = shuffle(pairs);
+
+    els.gameWordList.innerHTML = pairs
+      .map(
+        (pair) =>
+          `<button type="button" class="choice-button game-option${selectedWord === pair.word ? " active" : ""}" data-game-word="${pair.word}">${pair.word}</button>`
+      )
+      .join("");
+
+    els.gameMeaningList.innerHTML = shuffledMeanings
+      .map(
+        (pair) =>
+          `<button type="button" class="choice-button game-option" data-game-translation="${pair.translation}" data-game-word="${pair.word}">${pair.translation}</button>`
+      )
+      .join("");
+  }
+
+  function resetGame() {
+    state.gameSelectedWord = null;
+    state.gameFeedback = "";
+    renderGame();
+    els.gameFeedback.textContent = "";
   }
 
   function applyTheme() {
@@ -461,6 +539,11 @@
       state.currentPage = "exercises";
       renderPageTabs();
     });
+    els.gamePageBtn.addEventListener("click", () => {
+      state.currentPage = "game";
+      renderPageTabs();
+      renderGame();
+    });
     els.languageToggleBtn.addEventListener("click", () => {
       state.uiLanguage = state.uiLanguage === "nl" ? "en" : "nl";
       window.localStorage.setItem("dutchDailyCoach.uiLanguage", state.uiLanguage);
@@ -469,6 +552,32 @@
       renderSavedWords();
       renderMasteredWords();
     });
+    els.gameWordList.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-game-word]");
+      if (!button || button.dataset.gameTranslation) {
+        return;
+      }
+      state.gameSelectedWord = button.dataset.gameWord;
+      renderGame();
+    });
+    els.gameMeaningList.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-game-translation]");
+      if (!button || !state.gameSelectedWord) {
+        return;
+      }
+      const copy = getCopy();
+      const isCorrect = button.dataset.gameWord === state.gameSelectedWord;
+      if (isCorrect) {
+        const currentScore = Number(window.localStorage.getItem("dutchDailyCoach.gameScore") || 0) + 1;
+        window.localStorage.setItem("dutchDailyCoach.gameScore", String(currentScore));
+        els.gameFeedback.textContent = copy.gameCorrect;
+      } else {
+        els.gameFeedback.textContent = copy.gameWrong;
+      }
+      state.gameSelectedWord = null;
+      renderGame();
+    });
+    els.newGameBtn.addEventListener("click", resetGame);
     els.themeToggleBtn.addEventListener("click", () => {
       state.theme = state.theme === "dark" ? "light" : "dark";
       window.localStorage.setItem("dutchDailyCoach.theme", state.theme);
