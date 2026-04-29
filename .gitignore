@@ -1,0 +1,21 @@
+.DS_Store
+Thumbs.db
+
+# Local editor / OS files
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# Python simple server cache
+__pycache__/
+
+# Environment files
+.env
+.env.*
+
+# Local build / temp
+dist/
+build/
+tmp/

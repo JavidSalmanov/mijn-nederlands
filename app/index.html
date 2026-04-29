@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dutch Daily Coach</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-controls">
+          <button class="secondary-button toolbar-button" id="mainPageBtn">Hoofd</button>
+          <button class="secondary-button toolbar-button" id="exercisePageBtn">Oefeningen</button>
+          <button class="secondary-button toolbar-button" id="languageToggleBtn">NL</button>
+          <button class="theme-toggle" id="themeToggleBtn" aria-label="Thema wisselen" title="Thema wisselen">
+            <span class="theme-toggle-track">
+              <span class="theme-toggle-thumb" id="themeToggleThumb">☀︎</span>
+            </span>
+          </button>
+        </div>
+      </header>
+
+      <main class="grid">
+        <section class="page-section page-section-main" id="mainPage">
+          <section class="card lesson-card">
+            <div class="card-head">
+              <div>
+                <p class="section-kicker" id="lessonOfDayLabel">Recommended for today</p>
+                <h2 id="lessonContentTitle">Lesson title</h2>
+              </div>
+              <div class="lesson-meta">
+                <span class="pill" id="lessonContentMode">Dialogue</span>
+                <span class="pill" id="lessonContentTheme">Theme</span>
+              </div>
+            </div>
+
+            <div class="tab-row lesson-switch">
+              <button id="dialogueModeBtn" class="tab-button active"></button>
+              <button id="storyModeBtn" class="tab-button"></button>
+            </div>
+
+            <p class="lesson-intro" id="lessonContentIntro"></p>
+            <div class="sentence-list" id="sentenceList"></div>
+            <button class="primary-button lesson-button" id="openLessonBtn">Open lesson</button>
+          </section>
+
+          <aside class="card word-card">
+            <div class="card-head">
+              <div>
+                <p class="section-kicker" id="wordPanelLabel">Word help</p>
+                <h2 id="selectedWordTitle">Klik op een woord</h2>
+              </div>
+            </div>
+
+            <div id="wordPanel" class="word-panel">
+              <p id="wordPanelIntro"></p>
+              <div class="word-details hidden" id="wordDetails">
+                <div class="tab-row">
+                  <button id="definitionTabBtn" class="tab-button active"></button>
+                  <button id="translationTabBtn" class="tab-button"></button>
+                </div>
+                <p class="word-term" id="wordTerm"></p>
+                <p class="word-definition" id="wordDefinition"></p>
+                <p class="word-definition hidden" id="wordTranslation"></p>
+                <p class="word-example" id="wordExample"></p>
+                <div class="button-row">
+                  <button id="saveWordBtn" class="secondary-button"></button>
+                  <button id="masterWordBtn" class="secondary-button"></button>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <aside class="card word-day-card">
+            <div class="card-head">
+              <div>
+                <p class="section-kicker" id="wordDayLabel">Word of the day</p>
+                <h2 id="wordDayWord">gezellig</h2>
+              </div>
+            </div>
+
+            <p class="lesson-intro" id="wordDayMeaning"></p>
+            <p class="word-day-sentence" id="wordDaySentence"></p>
+          </aside>
+        </section>
+
+        <section class="page-section page-section-exercises hidden" id="exercisePage">
+          <section class="card exercises-card">
+            <div class="card-head">
+              <div>
+                <p class="section-kicker" id="practiceLabel">Practice</p>
+                <h2 id="practiceTitle">Use the words in context</h2>
+              </div>
+            </div>
+
+            <div class="tab-row">
+              <button id="fillBlankTabBtn" class="tab-button active"></button>
+              <button id="matchTabBtn" class="tab-button"></button>
+              <button id="contextTabBtn" class="tab-button"></button>
+            </div>
+
+            <div class="exercise-block" id="fillBlankPanel">
+              <h3 id="fillBlankTitle">Fill in the blank</h3>
+              <p id="fillBlankPrompt"></p>
+              <div class="choice-row" id="fillBlankChoices"></div>
+              <p class="feedback" id="fillBlankFeedback"></p>
+            </div>
+
+            <div class="exercise-block hidden" id="matchPanel">
+              <h3 id="matchTitle">Match word to meaning</h3>
+              <p id="matchPrompt"></p>
+              <div class="choice-grid" id="matchChoices"></div>
+              <p class="feedback" id="matchFeedback"></p>
+            </div>
+
+            <div class="exercise-block hidden" id="contextPanel">
+              <h3 id="contextTitle">Choose the right word</h3>
+              <p id="contextPrompt"></p>
+              <div class="choice-row" id="contextChoices"></div>
+              <p class="feedback" id="contextFeedback"></p>
+            </div>
+          </section>
+
+          <section class="card review-card">
+            <div class="card-head">
+              <div>
+                <p class="section-kicker" id="reviewLabelBottom">Review weak words</p>
+                <h2 id="reviewTitle">Saved and weak words</h2>
+              </div>
+              <button class="secondary-button" id="toggleMasteredBtn">Mastered words</button>
+            </div>
+
+            <p id="reviewIntro"></p>
+            <div class="saved-words" id="savedWords"></div>
+            <div class="mastered-panel hidden" id="masteredPanel">
+              <h3 id="masteredTitle">Mastered words</h3>
+              <div class="saved-words" id="masteredWords"></div>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script src="./data.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
