@@ -111,18 +111,21 @@
     return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 
-  function buildSentence(sentence, focusWords) {
-    let html = sentence;
+  function normalizeWord(value) {
+    return value
+      .toLowerCase()
+      .replace(/^[^a-zA-ZÀ-ÿ']+|[^a-zA-ZÀ-ÿ']+$/g, "");
+  }
 
-    Object.keys(focusWords).forEach((word) => {
-      const pattern = new RegExp(`\\b${escapeRegExp(word)}\\b`, "gi");
-      html = html.replace(
-        pattern,
-        `<button type="button" class="tap-word" data-word="${word.toLowerCase()}">$&</button>`
-      );
+  function getWordData(wordKey) {
+    return state.selectedLesson.focusWords[wordKey] || data.lexicon[wordKey] || null;
+  }
+
+  function buildSentence(sentence) {
+    return sentence.replace(/[A-Za-zÀ-ÿ']+/g, (match) => {
+      const normalized = normalizeWord(match);
+      return `<button type="button" class="tap-word" data-word="${normalized}">${match}</button>`;
     });
-
-    return html;
   }
 
   function renderCopy() {
@@ -181,7 +184,7 @@
 
     els.sentenceList.innerHTML = lesson.sentences
       .map((sentence) => {
-        const rendered = buildSentence(sentence, lesson.focusWords);
+        const rendered = buildSentence(sentence);
         if (lesson.mode === "dialogue" && sentence.includes(":")) {
           const parts = rendered.split(":");
           const speaker = parts.shift();
@@ -226,8 +229,22 @@
 
   function renderSelectedWord(wordKey) {
     const copy = getCopy();
-    const wordData = state.selectedLesson.focusWords[wordKey];
+    const wordData = getWordData(wordKey);
     if (!wordData) {
+      els.selectedWordTitle.textContent = wordKey;
+      els.wordPanelIntro.textContent = "";
+      els.wordTerm.textContent = wordKey;
+      els.wordDefinition.textContent = state.uiLanguage === "nl"
+        ? "Nog geen uitleg toegevoegd."
+        : "No explanation added yet.";
+      els.wordTranslation.textContent = state.uiLanguage === "nl"
+        ? "Nog geen vertaling toegevoegd."
+        : "No translation added yet.";
+      els.wordExample.textContent = "";
+      els.saveWordBtn.textContent = copy.saveWord;
+      els.masterWordBtn.textContent = copy.masterWord;
+      els.wordDetails.classList.remove("hidden");
+      renderWordHelpTab();
       return;
     }
 
