@@ -1,0 +1,13 @@
+{
+  "name": "dutch-daily-coach",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dutch learning app prototype for Azure App Service",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": "24.x"
+  }
+}

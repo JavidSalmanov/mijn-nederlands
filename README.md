@@ -14,6 +14,12 @@ Open the prototype in a browser:
 
 - `dutch/app/index.html`
 
+For Azure App Service deployment, this repo now also includes:
+
+- `server.js` to serve the static app on the App Service port
+- `package.json` with a `start` script
+- `.github/workflows/azure-app-service.yml` for GitHub Actions deployment
+
 ## Product concept
 
 This should feel like a personal Dutch coach, not a flashcard deck and not a school tool.
@@ -84,6 +90,17 @@ not:
 - Frontend: Next.js or React
 - Auth: Supabase Auth or Clerk
 - Database: Postgres / Supabase
+
+## Azure App Service notes
+
+If you deploy this repo to Azure App Service through GitHub Actions:
+
+1. Create the App Service with `Node 24 LTS`.
+2. Download the publish profile from Azure.
+3. Add it to GitHub Secrets as:
+   - `AZURE_WEBAPP_PUBLISH_PROFILE`
+4. Update `.github/workflows/azure-app-service.yml`:
+   - set `AZURE_WEBAPP_NAME` to your real app name
 
 ## Suggested data model
 
