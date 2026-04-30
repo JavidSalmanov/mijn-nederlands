@@ -17,8 +17,23 @@
     gameLastRoundSignature: "",
     savedWords: JSON.parse(window.localStorage.getItem("dutchDailyCoach.savedWords") || "[]"),
     masteredWords: JSON.parse(window.localStorage.getItem("dutchDailyCoach.masteredWords") || "[]"),
-    masteredOpen: false
+    masteredOpen: false,
+    progress: JSON.parse(window.localStorage.getItem("dutchDailyCoach.progress") || "{}"),
+    lessonStats: JSON.parse(window.localStorage.getItem("dutchDailyCoach.lessonStats") || "{}"),
+    fillBlankAnswered: false,
+    lastTrackedLessonId: null
   };
+
+  const BASIC_GAME_WORDS = new Set([
+    "de", "het", "een", "ik", "je", "jij", "hij", "zij", "we", "wij", "u",
+    "ze", "me", "mij", "hem", "haar", "hun", "ons", "dit", "dat", "die", "deze",
+    "is", "ben", "bent", "zijn", "was", "waren", "heb", "hebt", "heeft", "hebben",
+    "wil", "wilt", "kan", "kun", "kunnen", "moet", "moeten", "zal", "zullen",
+    "te", "in", "op", "aan", "bij", "met", "van", "voor", "na", "naar", "om",
+    "uit", "tot", "nog", "wel", "niet", "ja", "nee", "dan", "dus", "ook", "al",
+    "hier", "daar", "zo", "wat", "wie", "waar", "hoe", "wanneer", "waarom",
+    "als", "of", "en", "maar"
+  ]);
 
   const els = {
     languageToggleBtn: document.getElementById("languageToggleBtn"),
@@ -27,9 +42,11 @@
     mainPageBtn: document.getElementById("mainPageBtn"),
     exercisePageBtn: document.getElementById("exercisePageBtn"),
     gamePageBtn: document.getElementById("gamePageBtn"),
+    progressPageBtn: document.getElementById("progressPageBtn"),
     mainPage: document.getElementById("mainPage"),
     exercisePage: document.getElementById("exercisePage"),
     gamePage: document.getElementById("gamePage"),
+    progressPage: document.getElementById("progressPage"),
     openLessonBtn: document.getElementById("openLessonBtn"),
     dialogueModeBtn: document.getElementById("dialogueModeBtn"),
     storyModeBtn: document.getElementById("storyModeBtn"),
@@ -65,6 +82,8 @@
     contextPanel: document.getElementById("contextPanel"),
     fillBlankTitle: document.getElementById("fillBlankTitle"),
     fillBlankPrompt: document.getElementById("fillBlankPrompt"),
+    fillBlankInput: document.getElementById("fillBlankInput"),
+    fillBlankCheckBtn: document.getElementById("fillBlankCheckBtn"),
     fillBlankChoices: document.getElementById("fillBlankChoices"),
     fillBlankFeedback: document.getElementById("fillBlankFeedback"),
     matchTitle: document.getElementById("matchTitle"),
@@ -78,6 +97,8 @@
     reviewLabelBottom: document.getElementById("reviewLabelBottom"),
     reviewTitle: document.getElementById("reviewTitle"),
     reviewIntro: document.getElementById("reviewIntro"),
+    weakWordsTitle: document.getElementById("weakWordsTitle"),
+    weakWords: document.getElementById("weakWords"),
     savedWords: document.getElementById("savedWords"),
     toggleMasteredBtn: document.getElementById("toggleMasteredBtn"),
     masteredPanel: document.getElementById("masteredPanel"),
@@ -92,20 +113,189 @@
     gameWordList: document.getElementById("gameWordList"),
     gameMeaningList: document.getElementById("gameMeaningList"),
     gameFeedback: document.getElementById("gameFeedback"),
-    newGameBtn: document.getElementById("newGameBtn")
+    newGameBtn: document.getElementById("newGameBtn"),
+    progressLabel: document.getElementById("progressLabel"),
+    progressTitle: document.getElementById("progressTitle"),
+    progressMetrics: document.getElementById("progressMetrics"),
+    recommendedThemeTitle: document.getElementById("recommendedThemeTitle"),
+    recommendedLessonText: document.getElementById("recommendedLessonText"),
+    themeStrengthTitle: document.getElementById("themeStrengthTitle"),
+    themeBreakdown: document.getElementById("themeBreakdown")
   };
 
   function getCopy() {
     return data.uiCopy[state.uiLanguage];
   }
 
-  function getLesson() {
-    const filtered =
-      state.lessonModeFilter === "all"
-        ? data.lessons
-        : data.lessons.filter((lesson) => lesson.mode === state.lessonModeFilter);
+  function persistProgress() {
+    window.localStorage.setItem("dutchDailyCoach.progress", JSON.stringify(state.progress));
+  }
 
+  function persistLessonStats() {
+    window.localStorage.setItem("dutchDailyCoach.lessonStats", JSON.stringify(state.lessonStats));
+  }
+
+  function getWordProgress(word) {
+    if (!state.progress[word]) {
+      state.progress[word] = {
+        seen: 0,
+        correct: 0,
+        wrong: 0,
+        lastSeen: 0
+      };
+    }
+
+    return state.progress[word];
+  }
+
+  function getWordStatus(word) {
+    if (state.masteredWords.includes(word)) {
+      return "mastered";
+    }
+
+    const progress = getWordProgress(word);
+    const attempts = progress.correct + progress.wrong;
+
+    if (attempts >= 4 && progress.correct >= Math.max(3, progress.wrong + 2)) {
+      return "mastered";
+    }
+
+    if (progress.wrong > progress.correct || state.savedWords.includes(word)) {
+      return "weak";
+    }
+
+    if (attempts >= 2 || progress.seen > 0) {
+      return "learning";
+    }
+
+    return "new";
+  }
+
+  function recordWordSeen(word) {
+    if (!word) {
+      return;
+    }
+
+    const progress = getWordProgress(word);
+    progress.seen += 1;
+    progress.lastSeen = Date.now();
+    persistProgress();
+  }
+
+  function recordWordResult(words, isCorrect) {
+    words.forEach((word) => {
+      if (!word) {
+        return;
+      }
+
+      const progress = getWordProgress(word);
+      progress.seen += 1;
+      progress.lastSeen = Date.now();
+      progress[isCorrect ? "correct" : "wrong"] += 1;
+    });
+
+    if (state.selectedLesson) {
+      const lessonStats = state.lessonStats[state.selectedLesson.id] || {
+        views: 0,
+        correct: 0,
+        wrong: 0,
+        theme: state.selectedLesson.theme,
+        mode: state.selectedLesson.mode,
+        lastSeen: 0
+      };
+      lessonStats[isCorrect ? "correct" : "wrong"] += 1;
+      lessonStats.theme = state.selectedLesson.theme;
+      lessonStats.mode = state.selectedLesson.mode;
+      lessonStats.lastSeen = Date.now();
+      state.lessonStats[state.selectedLesson.id] = lessonStats;
+      persistLessonStats();
+    }
+
+    persistProgress();
+  }
+
+  function noteLessonView(lesson) {
+    const stats = state.lessonStats[lesson.id] || {
+      views: 0,
+      correct: 0,
+      wrong: 0,
+      theme: lesson.theme,
+      mode: lesson.mode,
+      lastSeen: 0
+    };
+
+    stats.views += 1;
+    stats.theme = lesson.theme;
+    stats.mode = lesson.mode;
+    stats.lastSeen = Date.now();
+    state.lessonStats[lesson.id] = stats;
+    persistLessonStats();
+
+    Object.keys(lesson.focusWords || {}).forEach((word) => recordWordSeen(word));
+  }
+
+  function getFilteredLessons() {
+    return state.lessonModeFilter === "all"
+      ? data.lessons
+      : data.lessons.filter((lesson) => lesson.mode === state.lessonModeFilter);
+  }
+
+  function getLesson() {
+    const filtered = getFilteredLessons();
     return filtered[state.lessonIndex % filtered.length];
+  }
+
+  function scoreLesson(lesson) {
+    const lessonStat = state.lessonStats[lesson.id];
+    const words = Object.keys(lesson.focusWords || {});
+    let score = lessonStat?.views ? 0 : 12;
+
+    words.forEach((word) => {
+      const status = getWordStatus(word);
+      if (status === "weak") {
+        score += 6;
+      } else if (status === "learning") {
+        score += 3;
+      } else if (status === "new") {
+        score += 2;
+      } else {
+        score -= 1;
+      }
+    });
+
+    if (lessonStat?.wrong > lessonStat?.correct) {
+      score += 4;
+    }
+
+    if (state.selectedLesson?.id === lesson.id) {
+      score -= 6;
+    }
+
+    return score;
+  }
+
+  function getRecommendedLessonIndex(excludeLessonId = "") {
+    const filtered = getFilteredLessons();
+    if (!filtered.length) {
+      return 0;
+    }
+
+    let bestIndex = 0;
+    let bestScore = -Infinity;
+
+    filtered.forEach((lesson, index) => {
+      if (excludeLessonId && filtered.length > 1 && lesson.id === excludeLessonId) {
+        return;
+      }
+
+      const score = scoreLesson(lesson);
+      if (score > bestScore) {
+        bestScore = score;
+        bestIndex = index;
+      }
+    });
+
+    return bestIndex;
   }
 
   function modeLabel(mode) {
@@ -166,7 +356,12 @@
       "fillBlankTitle",
       "matchTitle",
       "contextTitle",
-      "reviewLabelBottom"
+      "reviewLabelBottom",
+      "weakWordsTitle",
+      "progressLabel",
+      "progressTitle",
+      "recommendedThemeTitle",
+      "themeStrengthTitle"
     ].forEach((key) => {
       els[key].textContent = copy[key];
     });
@@ -174,6 +369,7 @@
     els.mainPageBtn.textContent = copy.mainPage;
     els.exercisePageBtn.textContent = copy.exercisesPage;
     els.gamePageBtn.textContent = copy.gamePage;
+    els.progressPageBtn.textContent = copy.progressPage;
     els.dialogueModeBtn.textContent = copy.dialogueMode;
     els.storyModeBtn.textContent = copy.storyMode;
     els.languageToggleBtn.textContent = state.uiLanguage === "nl" ? "NL" : "EN";
@@ -195,17 +391,26 @@
     els.openLessonBtn.textContent = copy.openLesson;
     els.gameIntro.textContent = copy.gameIntro;
     els.newGameBtn.textContent = copy.newGame;
+    els.fillBlankCheckBtn.textContent = copy.checkAnswer;
+    els.fillBlankInput.placeholder = copy.fillBlankTitle;
     els.reviewIntro.textContent = copy.reviewIntro;
     els.toggleMasteredBtn.textContent = copy.masteredButton;
     els.masteredTitle.textContent = copy.masteredTitle;
     renderPageTabs();
     renderLessonModeTabs();
     renderGame();
+    renderProgress();
   }
 
   function renderLesson() {
     state.selectedLesson = getLesson();
     const lesson = state.selectedLesson;
+    if (state.lastTrackedLessonId !== lesson.id) {
+      noteLessonView(lesson);
+      state.lastTrackedLessonId = lesson.id;
+    }
+    state.fillBlankAnswered = false;
+    els.fillBlankInput.value = "";
 
     els.lessonContentTitle.textContent = lesson.title[state.uiLanguage];
     els.lessonContentIntro.textContent = lesson.intro[state.uiLanguage];
@@ -236,6 +441,9 @@
     initializeGame();
     els.gameFeedback.textContent = "";
     renderGame();
+    renderSavedWords();
+    renderMasteredWords();
+    renderProgress();
   }
 
   function renderLessonModeTabs() {
@@ -262,6 +470,7 @@
 
   function renderSelectedWord(wordKey) {
     const copy = getCopy();
+    state.selectedWord = wordKey;
     const wordData = getWordData(wordKey);
     if (!wordData) {
       els.selectedWordTitle.textContent = wordKey;
@@ -281,7 +490,6 @@
       return;
     }
 
-    state.selectedWord = wordKey;
     els.selectedWordTitle.textContent = wordKey;
     els.wordPanelIntro.textContent = "";
     els.wordTerm.textContent = wordKey;
@@ -320,11 +528,49 @@
     els.contextTabBtn.classList.toggle("active", isContext);
   }
 
-  function renderExercise(container, promptEl, feedbackEl, exercise) {
+  function getExerciseWords(exercise) {
+    return [exercise.answer]
+      .concat(
+        exercise.answer.includes(" ")
+          ? exercise.answer
+              .split(" ")
+              .map((part) => normalizeWord(part))
+              .filter(Boolean)
+          : [normalizeWord(exercise.answer)]
+      )
+      .filter(Boolean);
+  }
+
+  function renderExercise(container, promptEl, feedbackEl, exercise, type) {
     const copy = getCopy();
     promptEl.textContent = exercise.prompt;
     feedbackEl.textContent = "";
     container.innerHTML = "";
+
+    if (type === "fillBlank") {
+      els.fillBlankInput.value = "";
+      els.fillBlankInput.disabled = false;
+      els.fillBlankCheckBtn.disabled = false;
+      els.fillBlankInput.classList.remove("correct", "wrong");
+      state.fillBlankAnswered = false;
+
+      exercise.choices.forEach((choice) => {
+        const button = document.createElement("button");
+        button.className = "choice-button hint-chip";
+        button.type = "button";
+        button.textContent = choice;
+        button.addEventListener("click", () => {
+          if (state.fillBlankAnswered) {
+            return;
+          }
+          els.fillBlankInput.value = choice;
+          els.fillBlankInput.focus();
+        });
+        container.appendChild(button);
+      });
+
+      return;
+    }
 
     exercise.choices.forEach((choice) => {
       const button = document.createElement("button");
@@ -333,6 +579,7 @@
       button.textContent = choice;
       button.addEventListener("click", () => {
         const isCorrect = choice === exercise.answer;
+        recordWordResult(getExerciseWords(exercise), isCorrect);
         container.querySelectorAll(".choice-button").forEach((item) => {
           item.disabled = true;
           if (item.textContent === exercise.answer) {
@@ -347,6 +594,8 @@
         feedbackEl.textContent = isCorrect
           ? copy.correct
           : `${copy.wrongPrefix} ${exercise.answer}`;
+        renderWeakWords();
+        renderProgress();
       });
 
       container.appendChild(button);
@@ -355,9 +604,21 @@
 
   function renderExercises() {
     const exercises = state.selectedLesson.exercises;
-    renderExercise(els.fillBlankChoices, els.fillBlankPrompt, els.fillBlankFeedback, exercises.fillBlank);
-    renderExercise(els.matchChoices, els.matchPrompt, els.matchFeedback, exercises.match);
-    renderExercise(els.contextChoices, els.contextPrompt, els.contextFeedback, exercises.context);
+    renderExercise(
+      els.fillBlankChoices,
+      els.fillBlankPrompt,
+      els.fillBlankFeedback,
+      exercises.fillBlank,
+      "fillBlank"
+    );
+    renderExercise(els.matchChoices, els.matchPrompt, els.matchFeedback, exercises.match, "match");
+    renderExercise(
+      els.contextChoices,
+      els.contextPrompt,
+      els.contextFeedback,
+      exercises.context,
+      "context"
+    );
     renderExerciseTab();
   }
 
@@ -365,12 +626,15 @@
     const isMain = state.currentPage === "main";
     const isExercises = state.currentPage === "exercises";
     const isGame = state.currentPage === "game";
+    const isProgress = state.currentPage === "progress";
     els.mainPage.classList.toggle("hidden", !isMain);
     els.exercisePage.classList.toggle("hidden", !isExercises);
     els.gamePage.classList.toggle("hidden", !isGame);
+    els.progressPage.classList.toggle("hidden", !isProgress);
     els.mainPageBtn.classList.toggle("active", isMain);
     els.exercisePageBtn.classList.toggle("active", isExercises);
     els.gamePageBtn.classList.toggle("active", isGame);
+    els.progressPageBtn.classList.toggle("active", isProgress);
   }
 
   function shuffle(items) {
@@ -382,18 +646,31 @@
     return copy;
   }
 
+  function isUsefulGameWord(word) {
+    const normalized = normalizeWord(word);
+    if (!normalized || normalized.length < 4) {
+      return false;
+    }
+
+    if (BASIC_GAME_WORDS.has(normalized)) {
+      return false;
+    }
+
+    return /[a-zà-ÿ]/i.test(normalized);
+  }
+
   function getGamePairs() {
     const uniquePairs = new Map();
 
     Object.entries(data.lexicon || {}).forEach(([word, value]) => {
-      if (value.translation && !uniquePairs.has(word)) {
+      if (value.translation && isUsefulGameWord(word) && !uniquePairs.has(word)) {
         uniquePairs.set(word, { word, translation: value.translation });
       }
     });
 
     data.lessons.forEach((lesson) => {
       Object.entries(lesson.focusWords || {}).forEach(([word, value]) => {
-        if (value.translation && !uniquePairs.has(word)) {
+        if (value.translation && isUsefulGameWord(word) && !uniquePairs.has(word)) {
           uniquePairs.set(word, { word, translation: value.translation });
         }
       });
@@ -402,7 +679,11 @@
         sentence.match(/[A-Za-zÀ-ÿ']+/g)?.forEach((token) => {
           const normalized = normalizeWord(token);
           const lexiconEntry = data.lexicon[normalized];
-          if (lexiconEntry?.translation && !uniquePairs.has(normalized)) {
+          if (
+            lexiconEntry?.translation &&
+            isUsefulGameWord(normalized) &&
+            !uniquePairs.has(normalized)
+          ) {
             uniquePairs.set(normalized, {
               word: normalized,
               translation: lexiconEntry.translation
@@ -448,10 +729,7 @@
     if (!pairs.length) {
       els.gameWordList.innerHTML = "";
       els.gameMeaningList.innerHTML = "";
-      els.gameFeedback.textContent =
-        state.uiLanguage === "nl"
-          ? "Ronde klaar. Klik op nieuw spel voor nieuwe woorden."
-          : "Round complete. Click new game for new words.";
+      els.gameFeedback.textContent = copy.gameRoundDone;
       return;
     }
 
@@ -482,13 +760,37 @@
     document.body.dataset.theme = state.theme;
   }
 
+  function getWeakWordsList() {
+    return Object.keys(state.progress)
+      .filter((word) => getWordStatus(word) === "weak" && !state.masteredWords.includes(word))
+      .sort((left, right) => {
+        const leftProgress = getWordProgress(left);
+        const rightProgress = getWordProgress(right);
+        return (rightProgress.wrong - rightProgress.correct) - (leftProgress.wrong - leftProgress.correct);
+      })
+      .slice(0, 16);
+  }
+
+  function renderWeakWords() {
+    const copy = getCopy();
+    const weakWords = getWeakWordsList();
+    if (!weakWords.length) {
+      els.weakWords.innerHTML = `<span class="saved-word">${copy.weakWordsEmpty}</span>`;
+      return;
+    }
+
+    els.weakWords.innerHTML = weakWords
+      .map((word) => `<button type="button" class="saved-word status-chip weak-chip" data-review-word="${word}">${word}</button>`)
+      .join("");
+  }
+
   function renderSavedWords() {
     const copy = getCopy();
     if (!state.savedWords.length) {
       els.savedWords.innerHTML = `<span class="saved-word">${copy.savedWordsEmpty}</span>`;
     } else {
       els.savedWords.innerHTML = state.savedWords
-        .map((word) => `<span class="saved-word">${word}</span>`)
+        .map((word) => `<button type="button" class="saved-word status-chip" data-review-word="${word}">${word}</button>`)
         .join("");
     }
   }
@@ -503,8 +805,79 @@
     }
 
     els.masteredWords.innerHTML = state.masteredWords
-      .map((word) => `<span class="saved-word mastered-word">${word}</span>`)
+      .map((word) => `<button type="button" class="saved-word mastered-word status-chip" data-review-word="${word}">${word}</button>`)
       .join("");
+  }
+
+  function buildThemeSummary() {
+    const summary = {};
+
+    Object.entries(state.lessonStats).forEach(([, lessonStats]) => {
+      const theme = lessonStats.theme;
+      if (!theme) {
+        return;
+      }
+
+      if (!summary[theme]) {
+        summary[theme] = { correct: 0, wrong: 0, views: 0 };
+      }
+
+      summary[theme].correct += lessonStats.correct || 0;
+      summary[theme].wrong += lessonStats.wrong || 0;
+      summary[theme].views += lessonStats.views || 0;
+    });
+
+    return summary;
+  }
+
+  function renderProgress() {
+    const copy = getCopy();
+    const trackedWords = Object.keys(state.progress);
+    const masteredCount = trackedWords.filter((word) => getWordStatus(word) === "mastered").length;
+    const learningCount = trackedWords.filter((word) => getWordStatus(word) === "learning").length;
+    const weakCount = trackedWords.filter((word) => getWordStatus(word) === "weak").length;
+    const metrics = [
+      { label: copy.wordsTracked, value: trackedWords.length },
+      { label: copy.wordsMastered, value: masteredCount },
+      { label: copy.wordsLearning, value: learningCount },
+      { label: copy.wordsWeak, value: weakCount }
+    ];
+
+    els.progressMetrics.innerHTML = metrics
+      .map(
+        (item) =>
+          `<div class="metric-card"><span class="metric-value">${item.value}</span><span class="metric-label">${item.label}</span></div>`
+      )
+      .join("");
+
+    const lessons = getFilteredLessons();
+    const recommendationIndex = getRecommendedLessonIndex();
+    const recommendation = lessons[recommendationIndex];
+    if (recommendation) {
+      const reason = Object.keys(recommendation.focusWords || {}).some(
+        (word) => getWordStatus(word) === "weak"
+      )
+        ? copy.recommendationReview
+        : copy.recommendationNew;
+      els.recommendedLessonText.textContent = `${recommendation.title[state.uiLanguage]} · ${reason}`;
+    } else {
+      els.recommendedLessonText.textContent = copy.noRecommendation;
+    }
+
+    const themeSummary = buildThemeSummary();
+    const themeEntries = Object.entries(themeSummary)
+      .sort(([, left], [, right]) => (right.correct - right.wrong) - (left.correct - left.wrong))
+      .slice(0, 6);
+
+    els.themeBreakdown.innerHTML = themeEntries.length
+      ? themeEntries
+          .map(([theme, stats]) => {
+            const score = stats.correct - stats.wrong;
+            const status = score >= 0 ? copy.themeStrong : copy.themeNeedsWork;
+            return `<div class="theme-item"><span>${themeLabel(theme)}</span><span class="theme-score">${status}</span></div>`;
+          })
+          .join("")
+      : `<p class="lesson-intro">${copy.noRecommendation}</p>`;
   }
 
   function saveWord() {
@@ -519,6 +892,8 @@
 
     renderSelectedWord(state.selectedWord);
     renderSavedWords();
+    renderWeakWords();
+    renderProgress();
   }
 
   function masterWord() {
@@ -539,28 +914,65 @@
 
     renderSelectedWord(state.selectedWord);
     renderSavedWords();
+    renderWeakWords();
     renderMasteredWords();
+    renderProgress();
   }
 
   function openNextLesson() {
-    const filteredLessons =
-      state.lessonModeFilter === "all"
-        ? data.lessons
-        : data.lessons.filter((lesson) => lesson.mode === state.lessonModeFilter);
-
-    state.lessonIndex = (state.lessonIndex + 1) % filteredLessons.length;
+    state.lessonIndex = getRecommendedLessonIndex(state.selectedLesson?.id);
+    state.lastTrackedLessonId = null;
     window.localStorage.setItem("dutchDailyCoach.lessonIndex", String(state.lessonIndex));
     renderLesson();
   }
 
   function bindEvents() {
+    function checkFillBlankAnswer() {
+      if (state.fillBlankAnswered) {
+        return;
+      }
+
+      const copy = getCopy();
+      const exercise = state.selectedLesson.exercises.fillBlank;
+      const value = normalizeWord(els.fillBlankInput.value);
+      const expected = normalizeWord(exercise.answer);
+      const isCorrect = value === expected;
+
+      state.fillBlankAnswered = true;
+      els.fillBlankInput.disabled = true;
+      els.fillBlankCheckBtn.disabled = true;
+      recordWordResult(getExerciseWords(exercise), isCorrect);
+
+      els.fillBlankChoices.querySelectorAll(".choice-button").forEach((item) => {
+        item.disabled = true;
+        if (normalizeWord(item.textContent) === expected) {
+          item.classList.add("correct");
+        }
+      });
+
+      if (!isCorrect) {
+        els.fillBlankInput.classList.add("wrong");
+      } else {
+        els.fillBlankInput.classList.add("correct");
+      }
+
+      els.fillBlankFeedback.textContent = isCorrect
+        ? copy.correct
+        : `${copy.wrongPrefix} ${exercise.answer}`;
+
+      renderWeakWords();
+      renderProgress();
+    }
+
     els.sentenceList.addEventListener("click", (event) => {
       const button = event.target.closest(".tap-word");
       if (!button) {
         return;
       }
 
+      recordWordSeen(button.dataset.word);
       renderSelectedWord(button.dataset.word);
+      renderProgress();
     });
 
     els.saveWordBtn.addEventListener("click", saveWord);
@@ -585,17 +997,25 @@
       state.exerciseTab = "context";
       renderExerciseTab();
     });
+    els.fillBlankCheckBtn.addEventListener("click", checkFillBlankAnswer);
+    els.fillBlankInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        checkFillBlankAnswer();
+      }
+    });
     els.openLessonBtn.addEventListener("click", openNextLesson);
     els.dialogueModeBtn.addEventListener("click", () => {
       state.lessonModeFilter = "dialogue";
-      state.lessonIndex = 0;
+      state.lessonIndex = getRecommendedLessonIndex();
+      state.lastTrackedLessonId = null;
       window.localStorage.setItem("dutchDailyCoach.lessonModeFilter", state.lessonModeFilter);
       renderCopy();
       renderLesson();
     });
     els.storyModeBtn.addEventListener("click", () => {
       state.lessonModeFilter = "story";
-      state.lessonIndex = 0;
+      state.lessonIndex = getRecommendedLessonIndex();
+      state.lastTrackedLessonId = null;
       window.localStorage.setItem("dutchDailyCoach.lessonModeFilter", state.lessonModeFilter);
       renderCopy();
       renderLesson();
@@ -612,6 +1032,11 @@
       state.currentPage = "game";
       renderPageTabs();
       renderGame();
+    });
+    els.progressPageBtn.addEventListener("click", () => {
+      state.currentPage = "progress";
+      renderPageTabs();
+      renderProgress();
     });
     els.languageToggleBtn.addEventListener("click", () => {
       state.uiLanguage = state.uiLanguage === "nl" ? "en" : "nl";
@@ -640,13 +1065,17 @@
         const currentScore = Number(window.localStorage.getItem("dutchDailyCoach.gameScore") || 0) + 1;
         window.localStorage.setItem("dutchDailyCoach.gameScore", String(currentScore));
         els.gameFeedback.textContent = copy.gameCorrect;
+        recordWordResult([state.gameSelectedWord], true);
         state.gamePairs = state.gamePairs.filter((pair) => pair.word !== state.gameSelectedWord);
         state.gameMeaningOrder = state.gameMeaningOrder.filter((word) => word !== state.gameSelectedWord);
       } else {
         els.gameFeedback.textContent = copy.gameWrong;
+        recordWordResult([state.gameSelectedWord], false);
       }
       state.gameSelectedWord = null;
       renderGame();
+      renderWeakWords();
+      renderProgress();
     });
     els.newGameBtn.addEventListener("click", resetGame);
     els.themeToggleBtn.addEventListener("click", () => {
@@ -659,15 +1088,29 @@
       state.masteredOpen = !state.masteredOpen;
       renderMasteredWords();
     });
+    [els.savedWords, els.masteredWords, els.weakWords].forEach((container) => {
+      container.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-review-word]");
+        if (!button) {
+          return;
+        }
+
+        state.currentPage = "main";
+        renderPageTabs();
+        renderSelectedWord(button.dataset.reviewWord);
+      });
+    });
   }
 
   function init() {
-    state.lessonIndex = ((state.lessonIndex % data.lessons.length) + data.lessons.length) % data.lessons.length;
+    state.lessonIndex = getRecommendedLessonIndex();
     applyTheme();
     renderCopy();
     renderLesson();
     renderSavedWords();
+    renderWeakWords();
     renderMasteredWords();
+    renderProgress();
     bindEvents();
   }
 

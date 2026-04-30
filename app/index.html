@@ -13,6 +13,7 @@
           <button class="secondary-button toolbar-button" id="mainPageBtn">Hoofd</button>
           <button class="secondary-button toolbar-button" id="exercisePageBtn">Oefeningen</button>
           <button class="secondary-button toolbar-button" id="gamePageBtn">Spel</button>
+          <button class="secondary-button toolbar-button" id="progressPageBtn">Voortgang</button>
           <button class="secondary-button toolbar-button" id="languageToggleBtn">NL</button>
           <button class="theme-toggle" id="themeToggleBtn" aria-label="Thema wisselen" title="Thema wisselen">
             <span class="theme-toggle-track">
@@ -104,7 +105,11 @@
             <div class="exercise-block" id="fillBlankPanel">
               <h3 id="fillBlankTitle">Fill in the blank</h3>
               <p id="fillBlankPrompt"></p>
-              <div class="choice-row" id="fillBlankChoices"></div>
+              <div class="typed-answer-row">
+                <input class="typed-answer-input" id="fillBlankInput" type="text" autocomplete="off" />
+                <button class="primary-button" id="fillBlankCheckBtn" type="button">Check</button>
+              </div>
+              <div class="choice-row hint-row" id="fillBlankChoices"></div>
               <p class="feedback" id="fillBlankFeedback"></p>
             </div>
 
@@ -133,6 +138,10 @@
             </div>
 
             <p id="reviewIntro"></p>
+            <div class="review-block">
+              <h3 id="weakWordsTitle">Weak words</h3>
+              <div class="saved-words" id="weakWords"></div>
+            </div>
             <div class="saved-words" id="savedWords"></div>
             <div class="mastered-panel hidden" id="masteredPanel">
               <h3 id="masteredTitle">Mastered words</h3>
@@ -167,6 +176,29 @@
             <p class="feedback" id="gameFeedback"></p>
             <div class="button-row">
               <button class="primary-button" id="newGameBtn">Nieuw spel</button>
+            </div>
+          </section>
+        </section>
+
+        <section class="page-section page-section-progress hidden" id="progressPage">
+          <section class="card progress-card">
+            <div class="card-head">
+              <div>
+                <p class="section-kicker" id="progressLabel">Progress</p>
+                <h2 id="progressTitle">Your learning overview</h2>
+              </div>
+            </div>
+
+            <div class="progress-metrics" id="progressMetrics"></div>
+            <div class="progress-columns">
+              <div class="progress-block">
+                <h3 id="recommendedThemeTitle">Recommended next</h3>
+                <p class="lesson-intro" id="recommendedLessonText"></p>
+              </div>
+              <div class="progress-block">
+                <h3 id="themeStrengthTitle">Themes</h3>
+                <div class="theme-list" id="themeBreakdown"></div>
+              </div>
             </div>
           </section>
         </section>

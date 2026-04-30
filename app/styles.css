@@ -141,6 +141,10 @@ select,
   grid-template-columns: 1fr;
 }
 
+.page-section-progress {
+  grid-template-columns: 1fr;
+}
+
 .lesson-card,
 .exercises-card,
 .game-card {
@@ -365,6 +369,41 @@ select,
   border-color: rgba(13, 124, 102, 0.5);
 }
 
+.typed-answer-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.typed-answer-input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--panel-strong);
+  color: var(--text);
+  border-radius: 14px;
+  padding: 12px 14px;
+  font: inherit;
+}
+
+.typed-answer-input.correct {
+  border-color: rgba(13, 124, 102, 0.7);
+  background: rgba(13, 124, 102, 0.12);
+}
+
+.typed-answer-input.wrong {
+  border-color: rgba(178, 74, 47, 0.55);
+  background: rgba(178, 74, 47, 0.08);
+}
+
+.hint-row {
+  margin-top: 10px;
+}
+
+.hint-chip {
+  text-align: center;
+}
+
 .exercise-block + .exercise-block {
   margin-top: 26px;
   padding-top: 22px;
@@ -442,10 +481,24 @@ select,
   color: var(--text);
 }
 
+.status-chip {
+  border: 0;
+  font: inherit;
+}
+
+.weak-chip {
+  background: rgba(178, 74, 47, 0.12);
+  color: var(--danger);
+}
+
 .mastered-panel {
   margin-top: 18px;
   padding-top: 18px;
   border-top: 1px solid var(--line);
+}
+
+.review-block {
+  margin-top: 14px;
 }
 
 .mastered-word {
@@ -453,10 +506,70 @@ select,
   color: var(--accent);
 }
 
+.progress-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.metric-card,
+.progress-block,
+.theme-item {
+  border: 1px solid var(--line);
+  background: var(--panel-strong);
+  border-radius: 18px;
+}
+
+.metric-card {
+  padding: 16px;
+  display: grid;
+  gap: 4px;
+}
+
+.metric-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.metric-label {
+  color: var(--muted);
+}
+
+.progress-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.progress-block {
+  padding: 16px;
+}
+
+.theme-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.theme-item {
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.theme-score {
+  color: var(--accent);
+  font-weight: 700;
+}
+
 @media (max-width: 920px) {
   .page-section-main,
   .page-section-exercises,
-  .page-section-game {
+  .page-section-game,
+  .page-section-progress {
     grid-template-columns: 1fr;
   }
 
@@ -470,6 +583,10 @@ select,
 
   .hero-controls {
     justify-content: space-between;
+  }
+
+  .progress-columns {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -547,6 +664,10 @@ select,
   }
 
   .game-board {
+    grid-template-columns: 1fr;
+  }
+
+  .typed-answer-row {
     grid-template-columns: 1fr;
   }
 
